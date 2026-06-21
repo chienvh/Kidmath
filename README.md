@@ -98,3 +98,6 @@ Troubleshooting
 
 Contact
 - If you need me to automate any step (create release, CI, Netlify connect), tell me and I will proceed.
+
+Copyright
+- Copyright © 2026 Chien Vu. All rights reserved.

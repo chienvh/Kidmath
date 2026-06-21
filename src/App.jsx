@@ -42,8 +42,66 @@ const grade3TopicList = {
 }
 
 const DB_KEY = 'kidmath'
-const loadDB = () => JSON.parse(localStorage.getItem(DB_KEY) || '{"users":{},"current":null,"grade":"kindergarten","semester":"1"}')
-const saveDB = data => localStorage.setItem(DB_KEY, JSON.stringify(data))
+const DB_VERSION = 1
+const DB_DEFAULT = {
+  version: DB_VERSION,
+  users: {},
+  current: null,
+  grade: 'kindergarten',
+  semester: '1',
+}
+
+function migrateDB(data) {
+  if (!data || typeof data !== 'object') {
+    return { ...DB_DEFAULT }
+  }
+  const version = typeof data.version === 'number' ? data.version : 0
+  let migrated = { ...DB_DEFAULT, ...data }
+
+  if (version < 1) {
+    migrated = {
+      ...DB_DEFAULT,
+      users: migrated.users || {},
+      current: migrated.current ?? null,
+      grade: migrated.grade || 'kindergarten',
+      semester: migrated.semester || '1',
+      version: 1,
+    }
+  }
+
+  if (!migrated.version) {
+    migrated.version = DB_VERSION
+  }
+
+  return migrated
+}
+
+const loadDB = () => {
+  const raw = localStorage.getItem(DB_KEY)
+  if (!raw) {
+    const fresh = { ...DB_DEFAULT }
+    saveDB(fresh)
+    return fresh
+  }
+
+  try {
+    const parsed = JSON.parse(raw)
+    const migrated = migrateDB(parsed)
+    if (migrated.version !== parsed.version) {
+      saveDB(migrated)
+    }
+    return migrated
+  } catch (e) {
+    const fresh = { ...DB_DEFAULT }
+    saveDB(fresh)
+    return fresh
+  }
+}
+
+const saveDB = data => {
+  const payload = { ...data, version: DB_VERSION }
+  localStorage.setItem(DB_KEY, JSON.stringify(payload))
+}
 
 function rnd(n) {
   return Math.floor(Math.random() * n)
